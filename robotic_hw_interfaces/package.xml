@@ -3,7 +3,7 @@
 <package format="3">
   <name>robotic_hw_interfaces</name>
   <version>0.0.0</version>
-  <description>Interfaces for Machina Labs Robotic Hw</description>
+  <description>Interfaces for Machina Labs Robotic Homework</description>
   <maintainer email="priyanshu.agrawal@uconn.edu">priyanshu</maintainer>
   <license>TODO: License declaration</license>
 
