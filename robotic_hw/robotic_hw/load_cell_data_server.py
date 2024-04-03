@@ -42,7 +42,7 @@ class LoadCellDataServer(Node):
         # Run a timer to periodically retry connecting to the sensor in case of socket disconnect
         self.retry_socket_connect = self.create_timer(3.0, self.connect_socket)
 
-    def get_load_cell_data_callback(self, request: GetLoadCellData.Request, response: GetLoadCellData.Response) -> None:
+    def get_load_cell_data_callback(self, request: GetLoadCellData.Request, response: GetLoadCellData.Response) -> GetLoadCellData.Response:
         """ Callback for the get_load_cell_data service. 
             Returns the latest filtered sample from the load cell.
         """
