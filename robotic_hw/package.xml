@@ -7,6 +7,9 @@
   <maintainer email="priyanshu.agrawal@uconn.edu">priyanshu</maintainer>
   <license>TODO: License declaration</license>
 
+  <depend>robotic_hw_interfaces<depend>
+  <depend>rclpy</depend>
+
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
