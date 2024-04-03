@@ -47,13 +47,13 @@ class LoadCellDataServer(Node):
             Returns the latest filtered sample from the load cell.
         """
         if not self.socket_connected or self.latest_filtered_sample is None:
-            response.data_ready = False
-            response.force_x, response.force_y, response.force_z = 0.0, 0.0, 0.0
-            response.timestamp = Time()
+            response.load_cell_data.data_ready = False
+            response.load_cell_data.force_x, response.load_cell_data.force_y, response.load_cell_data.force_z = 0.0, 0.0, 0.0
+            response.load_cell_data.timestamp = Time()
         else:
-            response.data_ready = True
-            response.force_x, response.force_y, response.force_z = self.latest_filtered_sample[:3]
-            response.timestamp = self.latest_sample_timestamp
+            response.load_cell_data.data_ready = True
+            response.load_cell_data.force_x, response.load_cell_data.force_y, response.load_cell_data.force_z = self.latest_filtered_sample[:3]
+            response.load_cell_data.timestamp = self.latest_sample_timestamp
 
         return response   
     
@@ -91,11 +91,19 @@ class LoadCellDataServer(Node):
             self.sock.sendall(message)
             byte_data = self.sock.recv(10000)
         except (OSError, ConnectionResetError):
-            self.get_logger().error(f"Connection to load cell lost.")
             # Close the socket, reconnect will be tried by the retry_socket_connect timer
+            self.get_logger().error(f"Connection to load cell lost.")        
             self.sock.close()
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket_connected = False
+            return
+        
+        if byte_data == b'':
+            # Close the socket, reconnect will be tried by the retry_socket_connect timer
+            self.get_logger().error(f"Received empty data from load cell. Connection is assumed to be lost.")
+            self.sock.close()
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket_connected = False 
             return
 
         # Filter data and store
@@ -107,6 +115,7 @@ class LoadCellDataServer(Node):
         """ Closes the socket. Called when node is shutdown.
         """
         self.get_logger().info('Shutting down, closing load cell socket.')
+        self.socket_connected = False
         self.sock.close()
 
 def main(args=None) -> None:

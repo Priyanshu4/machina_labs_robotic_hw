@@ -20,6 +20,7 @@ endif()
 
 # Generate service files
 rosidl_generate_interfaces(${PROJECT_NAME}
+    "msg/LoadCellData.msg"
     "srv/GetLoadCellData.srv"
     DEPENDENCIES builtin_interfaces 
     ADD_LINTER_TESTS
