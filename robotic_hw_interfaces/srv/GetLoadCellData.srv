@@ -1,0 +1,8 @@
+# Retrieves the latest measurement from a 3-DOF load cell.
+
+---
+bool data_ready                     # Indicates if sensor data has been recieved. False if no data has been recorded yet.
+builtin_interfaces/Time timestamp   # Timestamp indicating when the sensor reading was received by the server
+float64 force_x                     # Force in the x-direction (Newtons)
+float64 force_y                     # Force in the y-direction (Newtons)
+float64 force_z                     # Force in the z-direction (Netwons)
