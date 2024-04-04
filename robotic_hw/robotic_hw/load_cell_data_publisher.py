@@ -26,8 +26,8 @@ class LoadCellDataPublisher(Node):
         self.declare_parameter('publish_frequency', 500.0)
         self.publish_frequency = self.get_parameter('publish_frequency').get_parameter_value().double_value
 
-        # Create parameter for service call frequency (default 200 Hz)
-        self.declare_parameter('service_call_frequency', 200.0)
+        # Create parameter for service call frequency (default 100 Hz)
+        self.declare_parameter('service_call_frequency', 100.0)
         self.service_call_frequency = self.get_parameter('service_call_frequency').get_parameter_value().double_value
 
         # Create a client for each service
@@ -35,7 +35,7 @@ class LoadCellDataPublisher(Node):
         for service_name in self.service_names:
             client = self.create_client(GetLoadCellData, service_name)
             self.load_cell_clients.append(client)
-            while not client.wait_for_service(timeout_sec=1.0):
+            while not client.wait_for_service(timeout_sec=1.0) and rclpy.ok():
                 self.get_logger().warn(f'{service_name} service not available, waiting...')
             self.get_logger().info(f'{service_name} service available.')
 
@@ -70,7 +70,7 @@ class LoadCellDataPublisher(Node):
                 future = client.call_async(self.req)
                 future.add_done_callback(partial(self.future_callback, client_index=i))
             else:
-                # If the service is not available, log an error and set the future to None
+                # If the service is not available, log an error
                 # Set data_ready to False for that LoadCellData message
                 self.get_logger().error(f'Load cell data service {i} not available.')
                 self.load_cell_data_array_msg.load_cells[i] = LoadCellData(data_ready=False) 
@@ -97,9 +97,6 @@ def main(args=None) -> None:
     finally:
         rclpy.try_shutdown()
         load_cell_data_client.destroy_node()
-
-    rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()

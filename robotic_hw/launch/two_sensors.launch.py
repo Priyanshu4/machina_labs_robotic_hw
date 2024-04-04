@@ -44,6 +44,6 @@ def generate_launch_description():
             output='screen',
             parameters=[{'service_names': ['sensor_1/get_load_cell_data', 'sensor_2/get_load_cell_data']},
                         {'publish_frequency': 500.0},
-                        {'service_call_frequency': 200.0}])
+                        {'service_call_frequency': 100.0}])
 
     ])

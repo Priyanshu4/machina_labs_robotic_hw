@@ -20,18 +20,20 @@ class LoadCellDataServer(Node):
         self.declare_parameter('server_address', '127.0.0.3')
         self.declare_parameter('server_port', 10000)
         self.declare_parameter('number_of_samples', 5)
+        self.declare_parameter('retry_connect_period', 5.0)
 
         self.sensor_server_address = self.get_parameter('server_address').get_parameter_value().string_value
         self.sensor_server_port = self.get_parameter('server_port').get_parameter_value().integer_value
         self.number_of_samples = self.get_parameter('number_of_samples').get_parameter_value().integer_value
+        self.retry_connect_period = self.get_parameter('retry_connect_period').get_parameter_value().double_value
 
         # Init Service
         self.srv = self.create_service(GetLoadCellData, 'get_load_cell_data', self.get_load_cell_data_callback)
         
         # Create socket to read data from the load cell
         self.socket_connected = False
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.connect_socket()
+        self.sock = None
+        self.init_and_connect_socket()
 
         # Store the latest filtered sample from the load cell
         self.latest_filtered_sample: Optional[np.ndarray] = None
@@ -45,7 +47,7 @@ class LoadCellDataServer(Node):
         self.socket_thread.start()
 
         # Run a timer to periodically retry connecting to the sensor in case of socket disconnect
-        self.retry_socket_connect_timer = self.create_timer(5.0, self.connect_socket)
+        self.retry_socket_connect_timer = self.create_timer(self.retry_connect_period, self.init_and_connect_socket)
 
     def get_load_cell_data_callback(self, request: GetLoadCellData.Request, response: GetLoadCellData.Response) -> GetLoadCellData.Response:
         """ Callback for the get_load_cell_data service. 
@@ -87,15 +89,14 @@ class LoadCellDataServer(Node):
                 # Close the socket, reconnect will be tried by the retry_socket_connect timer
                 self.get_logger().error(f"Connection to load cell lost.")        
                 self.sock.close()
-                self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.socket_connected = False
                 return
             
             if byte_data == b'':
+                # Empty data indicates that the socket connection is lost
                 # Close the socket, reconnect will be tried by the retry_socket_connect timer
                 self.get_logger().error(f"Received empty data from load cell. Connection is assumed to be lost.")
                 self.sock.close()
-                self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.socket_connected = False 
                 return
 
@@ -109,12 +110,13 @@ class LoadCellDataServer(Node):
         self.socket_connected = False
         self.sock.close()
 
-    def connect_socket(self) -> None:
+    def init_and_connect_socket(self) -> None:
         """ Attempts to connect the socket to the sensor.
             Sets self.socket_connected to True if successful, False otherwise. 
         """
         if not self.socket_connected:
             try:
+                self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.sock.connect((self.sensor_server_address, self.sensor_server_port))
                 self.get_logger().info(f"Connecting to {self.sensor_server_address} port {self.sensor_server_port}")
             except (ConnectionRefusedError, ConnectionAbortedError):
