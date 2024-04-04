@@ -7,7 +7,10 @@ from robotic_hw_interfaces.msg import LoadCellDataArray, LoadCellData
 
 class LoadCellDataPublisher(Node):
     """ Calls GetLoadCellData services to get the latest load cell data and publishes it at specified frequency.
+
         The services are specified as parameters to this node, allowiing the node to publish information from any number of load cells.
+        The published message is an array of load cell data. The order corresponds to the order of the service names.
+
         Calling services and publishing are decoupled in different timers. This means old data may be published several times if the service call is slow.
     """
 
@@ -23,7 +26,7 @@ class LoadCellDataPublisher(Node):
         self.declare_parameter('publish_frequency', 500.0)
         self.publish_frequency = self.get_parameter('publish_frequency').get_parameter_value().double_value
 
-        # Create parameter for service call frequency (default 500 Hz)
+        # Create parameter for service call frequency (default 200 Hz)
         self.declare_parameter('service_call_frequency', 200.0)
         self.service_call_frequency = self.get_parameter('service_call_frequency').get_parameter_value().double_value
 
@@ -35,7 +38,6 @@ class LoadCellDataPublisher(Node):
             while not client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().warn(f'{service_name} service not available, waiting...')
             self.get_logger().info(f'{service_name} service available.')
-        self.futures = set() # Store the active futures so they are not garbage collected before they complete
 
         # Create request object (same for all services)
         self.req = GetLoadCellData.Request()
@@ -77,11 +79,10 @@ class LoadCellDataPublisher(Node):
 
     def future_callback(self, future, client_index: int = None) -> None:
         """ When the service call is done, this function is called to process the result.
-            We store the result in the LoadCellDataArray message  at index client_index.
+            We store the result in the LoadCellDataArray message at index client_index.
         """
         try:
             self.load_cell_data_array_msg.load_cells[client_index] = future.result().load_cell_data
-            self.futures.remove(future)
         except Exception as e:
             self.get_logger().error(f'Exception while calling service: {e}')
             return
