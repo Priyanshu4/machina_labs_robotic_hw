@@ -1,4 +1,37 @@
-# Robotic_HW
+# Machina_Labs_Robotic_HW
+This is my submission for the Machina Labs robotic homework.
+
+## Overview
+My solution contains two packages, `robotic_hw_interfaces` and `robotic_hw`.
+
+`robotic_hw_interfaces` contains the custom interfaces (services and messages) needed for my solution.
+* `srv/GetLoadCellData.srv` contains the definition of the service for the 3-DOF sensor.
+* `msg/LoadCellData.msg` defines a message containing information about a 3-DOF sensor measurement.
+* `msg/LoadCellDataArray.msg` defines the message published by the publisher node. It is an array because the publisher requests data from multiple servers and aggregates them into one topic.
+
+`robotic_hw` contains the implementation of my server and publisher nodes, as well as launch files for convenience.
+* `robotic_hw/load_cell_data_server.py` is a node which requests data from a load cell through a socket. It exposes this data through a ROS2 service.
+  * The server is robust and will attempt to periodically reconnect if the load cell socket disconnects.
+  * The socket IP, port and number of samples to request are parameters of the node.
+  * Since the assignment mentions filtered data, a simple lowpass filter is applied by averaging the received samples into one filtered sample.
+* `robotic_hw/load_cell_data_publisher.py` is a node which requests load cell data from multiple services and combines them into an array which is published at 500 Hz.
+  * The publisher takes a list of services as parameter, so it can easily scale to any number of sensors and services.
+  * Publishing frequency (500 Hz) and service request frequency are also parameters of the node.
+  * The aggregated data is published as a LoadCellDataArray message to the `/load_cells` topic.
+
+## Usage
+This repository can be cloned directly into a ROS2 workspace. 
+In addition to standard ROS2 libraries, the only additional dependency is `numpy`.
+To build, you can run `colcon build` in the workspace root. The package then must be sourced from the install directory.
+To run the code, you can use the launch files defined in the `robotic_hw` package.
+
+Launch Files
+  * `launch/two_sensors.launch.py` launches two servers and one publisher.
+  * `launch/simulator.launch.py` launches the sensor simulator script, `sensor.py`.
+  * `launch/two_sensors_simulated.launch.py` launches both of those launch files, starting the simulator and the nodes.
+
+# Original Assignment
+
 ## Context
 The design of our cells in Machina Labs has evolved over the past years. Currently, each of our cells has two articulated industrial robots on rails (a total of 7 axes) and a frame with hydraulic clamps. For the parts to form correctly, we must exert and maintain a dynamic force during the forming in a very accurate location in space. Currently, each robot is equipped with a load cell. See a quick video about our process [here](https://www.youtube.com/watch?v=iqYMprTEXRI). We are using ROS2 to collect the data from the network and control the robots in real-time. As a robotic engineer, we keep developing different modules for our network to add features to the system.  
  
