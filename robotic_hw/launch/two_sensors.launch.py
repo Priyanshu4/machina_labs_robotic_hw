@@ -21,8 +21,7 @@ def generate_launch_description():
             namespace='sensor_1',
             parameters=[{'server_address': '127.0.0.3'},
                         {'server_port': 10000},
-                        {'number_of_samples': 5},
-                        {'request_frequency': 200.0}]),
+                        {'number_of_samples': 10}]),
         
         # Launch the second  server node for the second sensor
         # The second sensor has a sample rate of 4000 Hz and a delay of 3 ms
@@ -35,8 +34,7 @@ def generate_launch_description():
             namespace='sensor_2',
             parameters=[{'server_address': '127.0.0.1'},
                         {'server_port': 10000},
-                        {'number_of_samples': 16},
-                        {'request_frequency': 125.0}]),
+                        {'number_of_samples': 30}]),
 
         # Launch the load cell data publisher node
         Node(
