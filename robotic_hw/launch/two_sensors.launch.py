@@ -11,8 +11,10 @@ def generate_launch_description():
         
         # Launch the first server node for the first sensor
         # The number of samples and request_frequency parametes are chosen based on sensor sample rate and delay
-        # I choose them such that more time is spent on sampling than the delay
-        # The first sensor has a sample rate of 2000 Hz and a delay of 1 ms
+        # I choose them such that more time is spent on sampling than the delay. 
+        # However, we also do not want the number of samples to be too large as this adds latency.
+        # The first sensor has a sample rate of 2000 Hz and a delay of 1 ms. Each sensor in the simulator also has additional random latency up to 1ms.
+        # By taking 10 samples at a time, 5 ms are spent on sampling and up to 2 ms on delay. Total time is 7 ms which allows a rate greater than 100 hz.
         Node(
             package='robotic_hw',
             executable='load_cell_data_server',
@@ -25,7 +27,8 @@ def generate_launch_description():
         
         # Launch the second  server node for the second sensor
         # The second sensor has a sample rate of 4000 Hz and a delay of 3 ms
-        # Because the delay is longer, the number of samples is increased and sampling frequency is decreased
+        # Because the delay is longer and the sample rate is faster, the number of samples is increased.
+        # By taking 24 samples at a time, 6 ms are spent on sampling and up to 4 ms on delay. Total time is 10 ms which allows 100 hz rate.
         Node(
             package='robotic_hw',
             executable='load_cell_data_server',
@@ -34,7 +37,7 @@ def generate_launch_description():
             namespace='sensor_2',
             parameters=[{'server_address': '127.0.0.1'},
                         {'server_port': 10000},
-                        {'number_of_samples': 30}]),
+                        {'number_of_samples': 24}]),
 
         # Launch the load cell data publisher node
         Node(
