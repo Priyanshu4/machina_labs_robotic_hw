@@ -69,7 +69,6 @@ class LoadCellDataPublisher(Node):
             if client.service_is_ready():
                 future = client.call_async(self.req)
                 future.add_done_callback(partial(self.future_callback, client_index=i))
-                self.futures.add(future)
             else:
                 # If the service is not available, log an error and set the future to None
                 # Set data_ready to False for that LoadCellData message
