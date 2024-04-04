@@ -127,7 +127,6 @@ class LoadCellDataServer(Node):
 def main(args=None) -> None:
     rclpy.init(args=args)
     load_cell_data_server = LoadCellDataServer()
-    rclpy.get_default_context().on_shutdown(load_cell_data_server.clean_shutdown)
 
     try:
         rclpy.spin(load_cell_data_server)
