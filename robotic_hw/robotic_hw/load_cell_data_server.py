@@ -20,7 +20,7 @@ class LoadCellDataServer(Node):
         self.declare_parameter('server_address', '127.0.0.3')
         self.declare_parameter('server_port', 10000)
         self.declare_parameter('number_of_samples', 5)
-        self.declare_parameter('retry_connect_period', 5.0)
+        self.declare_parameter('retry_connect_period', 3.0)
 
         self.sensor_server_address = self.get_parameter('server_address').get_parameter_value().string_value
         self.sensor_server_port = self.get_parameter('server_port').get_parameter_value().integer_value
@@ -46,17 +46,16 @@ class LoadCellDataServer(Node):
         self.socket_thread = threading.Thread(target=self.socket_thread)
         self.socket_thread.start()
 
-        # Run a timer to periodically retry connecting to the sensor in case of socket disconnect
-        self.retry_socket_connect_timer = self.create_timer(self.retry_connect_period, self.init_and_connect_socket)
-
     def get_load_cell_data_callback(self, request: GetLoadCellData.Request, response: GetLoadCellData.Response) -> GetLoadCellData.Response:
         """ Callback for the get_load_cell_data service. 
             Returns the latest filtered sample from the load cell.
         """
-        if not self.socket_connected or self.latest_filtered_sample is None:
+        if self.latest_filtered_sample is None:
             response.load_cell_data.data_ready = False
             response.load_cell_data.force_x, response.load_cell_data.force_y, response.load_cell_data.force_z = 0.0, 0.0, 0.0
-            response.load_cell_data.timestamp = Time()
+            if self.latest_sample_timestamp is not None:
+                with self.mutex:
+                    response.load_cell_data.timestamp = self.latest_sample_timestamp
         else:
             response.load_cell_data.data_ready = True
             with self.mutex:
@@ -75,8 +74,16 @@ class LoadCellDataServer(Node):
             Taking the mean over the most recent samples is a simple example of a low-pass filter for noise reduction. 
         """
         while rclpy.ok():
+            
             if not self.socket_connected:
-                time.sleep(1.0)
+                # Set the data to None so that the server knows that data is not ready 
+                with self.mutex:
+                    self.latest_filtered_sample = None
+                    self.latest_sample_timestamp = self.get_clock().now().to_msg()
+
+                # Attempt retries periodically
+                self.init_and_connect_socket()
+                time.sleep(self.retry_connect_period)
                 continue
 
             # Try to request samples from the load cell
@@ -90,7 +97,7 @@ class LoadCellDataServer(Node):
                 self.get_logger().error(f"Connection to load cell lost.")        
                 self.sock.close()
                 self.socket_connected = False
-                return
+                continue
             
             if byte_data == b'':
                 # Empty data indicates that the socket connection is lost
@@ -98,7 +105,7 @@ class LoadCellDataServer(Node):
                 self.get_logger().error(f"Received empty data from load cell. Connection is assumed to be lost.")
                 self.sock.close()
                 self.socket_connected = False 
-                return
+                continue
 
             # Filter data and store
             data = np.frombuffer(byte_data).reshape(self.number_of_samples, -1)
